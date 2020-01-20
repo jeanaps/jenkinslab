@@ -1,0 +1,14 @@
+---
+# PLAY PARA CONFIGURACAO DA WORKSPACE
+- hosts: workspace
+  name: Configurando a WorkSpace
+  remote_user: vagrant
+  become: yes
+  tasks:
+          #   - name: Criando a Pasta de Roles
+          #file:
+          #path:  roles
+          #state: present
+
+    - name: Instalando as Roles do Galaxy
+      command: ansible-galaxy install -r requirements.yml --roles-path roles

@@ -1,0 +1,78 @@
+---
+# PLAY PARA CONFIGURACAO DA WORKSPACE
+- hosts: workspace
+  name: Configurando a WorkSpace
+  remote_user: vagrant
+  become: yes
+  pre_tasks:
+    - name: Liberando o Jenkins no SUDO
+      copy:
+        content: |
+          jenkins ALL=(ALL:ALL) NOPASSWD:ALL
+        dest: /etc/sudoers.d/jenkins
+        validate: 'visudo -cf %s'
+        mode: 0440
+
+  tasks:
+    - name: Ajustando Timezone
+      timezone:
+        name: America/Sao_Paulo
+
+    - name: Gerar Chave SSH
+      openssh_keypair:
+        path: /home/vagrant/.ssh/id_rsa
+        owner: vagrant
+        group: vagrant
+
+
+    # Instalação do GCLOUD
+    - name: Adicionando Key do Repositorio do GCLOUD
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Adicionando o Repositõrio do Google
+      apt_repository:
+        repo: "deb http://packages.cloud.google.com/apt cloud-sdk-{{ ansible_distribution_release }} main"
+        update_cache: yes
+
+    - name: Instalação do GCLOUD e outras dependências
+      apt:
+        pkg: ['google-cloud-sdk','unzip']
+        state: present
+
+    # Instalação do TERRAFORM
+    - name: Download do Terraform
+      get_url:
+        url: https://releases.hashicorp.com/terraform/0.12.16/terraform_0.12.16_linux_amd64.zip
+        dest: /tmp/terraform.zip
+
+    - name: Extração do Binário no PATH
+      unarchive:
+        src: /tmp/terraform.zip
+        dest: "/usr/local/bin/"
+        copy: no
+
+    - name: Supports a validate command
+      replace:
+        path: /etc/ansible/ansible.cfg
+        regexp: '^#host_key_checking = True'
+        replace: 'host_key_checking = False'
+
+  vars:
+    jenkins_http_port: 8080
+    jenkins_admin_username: admin
+    jenkins_admin_password: admin
+    jenkins_plugins:
+    - matrix-auth
+    - cloudbees-folder
+    - workflow-aggregator
+    - pipeline-stage-view
+    - git
+    - gitlab-plugin
+    - gitlab-branch-source
+    - chucknorris
+
+  roles:
+    - geerlingguy.java
+    - geerlingguy.jenkins
